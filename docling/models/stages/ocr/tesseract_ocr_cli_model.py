@@ -32,6 +32,7 @@ from docling.models.stages.ocr.tesseract_utils import (
     language_to_tesseract_code,
     osd_script_to_tesseract_code,
     parse_tesseract_orientation,
+    tesseract_render_scale,
     tesseract_vocabulary,
 )
 from docling.utils.ocr_language import (
@@ -328,7 +329,6 @@ class TesseractOcrCliModel(BaseOcrModel):
             yield from page_batch
             return
 
-        dpi = _POINTS_PER_INCH * self.scale
         for page_i, page in enumerate(page_batch):
             assert page._backend is not None
             if not page._backend.is_valid():
@@ -342,9 +342,11 @@ class TesseractOcrCliModel(BaseOcrModel):
                         # Skip zero area boxes
                         if ocr_rect.area() == 0:
                             continue
+                        scale = tesseract_render_scale(ocr_rect, self.scale)
                         high_res_image = page._backend.get_page_image(
-                            scale=self.scale, cropbox=ocr_rect
+                            scale=scale, cropbox=ocr_rect
                         )
+                        dpi = _POINTS_PER_INCH * scale
                         try:
                             with tempfile.NamedTemporaryFile(
                                 suffix=".png", mode="w+b", delete=False
@@ -412,7 +414,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                             rect = ocr_box_to_bounding_rectangle(
                                 bbox,
                                 original_offset=ocr_rect,
-                                scale=self.scale,
+                                scale=scale,
                                 orientation=doc_orientation,
                                 im_size=high_res_image.size,
                             )

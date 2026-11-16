@@ -229,6 +229,13 @@ Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
 determines the physical page size; missing DPI, `(1, 1)` DPI and `(0, 0)` DPI are treated as 72 DPI.
 Rendering at scale `n` produces `n` pixels per document point.
 
+Both Tesseract backends limit each OCR region to approximately 100 million pixels.
+They reduce `ocr_options.scale` for regions that would exceed this budget, before
+rendering the image. This prevents the default upscale from exceeding Leptonica's
+image buffer limit on large archival scans. Smaller regions keep the requested
+scale. Text coordinates and image DPI use the reduced scale. Other OCR backends
+keep their existing scale behavior.
+
 ### Control PDF table extraction options
 
 You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.

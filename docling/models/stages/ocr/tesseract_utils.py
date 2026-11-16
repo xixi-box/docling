@@ -8,9 +8,11 @@ drive the same engine through different front-ends, so everything that is about
 Tesseract itself rather than about either front-end lives here.
 """
 
+import math
 from collections.abc import Sequence
 
 import langcodes
+from docling_core.types.doc import BoundingBox
 
 from docling.utils.ocr_language import (
     OcrLanguage,
@@ -18,6 +20,16 @@ from docling.utils.ocr_language import (
     OcrLanguageSupport,
 )
 from docling.utils.orientation import CLIPPED_ORIENTATIONS
+
+# Keep 32-bit Leptonica images well below its 2 GiB allocation limit.
+# This also bounds the memory used by rendering and orientation detection.
+_TESSERACT_MAX_PIXELS = 100_000_000
+
+
+def tesseract_render_scale(rect: BoundingBox, scale: float) -> float:
+    """Limit each OCR region to approximately 100 MP before it is rendered."""
+    return min(scale, math.sqrt(_TESSERACT_MAX_PIXELS / rect.area()))
+
 
 # Tessdata files that are not recognizers: `osd` is the orientation-and-script
 # detector, `equ` the equation model. Neither is a language anyone can ask for.
